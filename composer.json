@@ -1,0 +1,39 @@
+{
+    "name": "loicboursin/oauth2-microsoft-graph",
+    "description": "Microsoft OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Loïc Boursin",
+            "email": "contact@loicboursin.fr",
+            "homepage": "https://github.com/LoicBoursin"
+        }
+    ],
+    "keywords": [
+        "oauth",
+        "oauth2",
+        "client",
+        "authorization",
+        "authorisation",
+        "microsoft",
+        "graph"
+    ],
+    "require": {
+        "league/oauth2-client": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.0",
+        "mockery/mockery": "1.3.*",
+        "squizlabs/php_codesniffer": "~2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "LoicBoursin\\OAuth2\\Client\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "LoicBoursin\\OAuth2\\Client\\Test\\": "tests/src/"
+        }
+    }
+}

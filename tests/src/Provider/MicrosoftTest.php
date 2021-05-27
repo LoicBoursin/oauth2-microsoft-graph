@@ -129,7 +129,7 @@ class MicrosoftTest extends TestCase
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
 
         $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-        $userResponse->shouldReceive('getBody')->andReturn('{"id": '.$userId.', "name": "'.$name.'", "first_name": "'.$firstname.'", "last_name": "'.$lastname.'", "emails": {"preferred": "'.$email.'"}, "link": "'.$urls.'"}');
+        $userResponse->shouldReceive('getBody')->andReturn('{"id": '.$userId.', "displayName": "'.$name.'", "givenName": "'.$firstname.'", "surname": "'.$lastname.'", "userPrincipalName": "'.$email.'", "link": "'.$urls.'"}');
         $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
 
         $client = m::mock('GuzzleHttp\ClientInterface');
@@ -142,13 +142,13 @@ class MicrosoftTest extends TestCase
         $user = $this->provider->getResourceOwner($token);
 
         $this->assertEquals($email, $user->getEmail());
-        $this->assertEquals($email, $user->toArray()['emails']['preferred']);
+        $this->assertEquals($email, $user->toArray()['userPrincipalName']);
         $this->assertEquals($firstname, $user->getFirstname());
-        $this->assertEquals($firstname, $user->toArray()['first_name']);
+        $this->assertEquals($firstname, $user->toArray()['givenName']);
         $this->assertEquals($lastname, $user->getLastname());
-        $this->assertEquals($lastname, $user->toArray()['last_name']);
+        $this->assertEquals($lastname, $user->toArray()['surname']);
         $this->assertEquals($name, $user->getName());
-        $this->assertEquals($name, $user->toArray()['name']);
+        $this->assertEquals($name, $user->toArray()['displayName']);
         $this->assertEquals($userId, $user->getId());
         $this->assertEquals($userId, $user->toArray()['id']);
         $this->assertEquals($urls.'/cid-'.$userId, $user->getUrls());

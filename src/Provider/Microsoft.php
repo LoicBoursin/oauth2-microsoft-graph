@@ -11,59 +11,61 @@ use Psr\Http\Message\ResponseInterface;
 class Microsoft extends AbstractProvider
 {
     /**
-     * Default scopes
+     * Default scopes.
      *
-     * @var array
+     * @var array<string>
      */
-    public $defaultScopes = ['openid', 'email', 'profile'];
+    public array $defaultScopes = ['openid', 'email', 'profile'];
 
     /**
      * Base url for authorization.
-     *
-     * @var string
      */
-    protected $urlAuthorize = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+    protected string $urlAuthorize = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
 
     /**
      * Base url for access token.
-     *
-     * @var string
      */
-    protected $urlAccessToken = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+    protected string $urlAccessToken = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 
     /**
      * Base url for resource owner.
-     *
-     * @var string
      */
-    protected $urlResourceOwnerDetails = 'https://graph.microsoft.com/v1.0/me';
+    protected string $urlResourceOwnerDetails = 'https://graph.microsoft.com/v1.0/me';
 
     /**
-     * Get authorization url to begin OAuth flow
-     *
-     * @return string
+     * Get authorization url to begin OAuth flow.
      */
-    public function getBaseAuthorizationUrl()
+    public function getBaseAuthorizationUrl(): string
     {
         return $this->urlAuthorize;
     }
 
     /**
-     * Get access token url to retrieve token
+     * Get access token url to retrieve token.
      *
-     * @return string
+     * @param array<string> $params
      */
-    public function getBaseAccessTokenUrl(array $params)
+    public function getBaseAccessTokenUrl(array $params): string
     {
         return $this->urlAccessToken;
     }
 
     /**
-     * Get default scopes
-     *
-     * @return array
+     * Get provider url to fetch user details.
      */
-    protected function getDefaultScopes()
+    public function getResourceOwnerDetailsUrl(AccessToken $token): string
+    {
+        $uri = new Uri($this->urlResourceOwnerDetails);
+
+        return (string) Uri::withQueryValue($uri, 'access_token', (string) $token);
+    }
+
+    /**
+     * Get default scopes.
+     *
+     * @return array<string>
+     */
+    protected function getDefaultScopes(): array
     {
         return $this->defaultScopes;
     }
@@ -71,17 +73,17 @@ class Microsoft extends AbstractProvider
     /**
      * Check a provider response for errors.
      *
+     * @param array<string, array<string, string>|string> $data
+     *
      * @throws IdentityProviderException
-     * @param  ResponseInterface $response
-     * @return void
      */
-    protected function checkResponse(ResponseInterface $response, $data)
+    protected function checkResponse(ResponseInterface $response, $data): void
     {
         if (isset($data['error'])) {
             throw new IdentityProviderException(
-                (isset($data['error']['message']) ? $data['error']['message'] : $response->getReasonPhrase()),
+                $data['error']['message'] ?? $response->getReasonPhrase(),
                 $response->getStatusCode(),
-                $response
+                $response->getBody()
             );
         }
     }
@@ -89,33 +91,22 @@ class Microsoft extends AbstractProvider
     /**
      * Generate a user object from a successful user details request.
      *
-     * @param array $response
-     * @param AccessToken $token
-     * @return MicrosoftUser
+     * @param array<string, string> $response
      */
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, AccessToken $token): MicrosoftUser
     {
         return new MicrosoftUser($response);
     }
 
     /**
-     * Get provider url to fetch user details
+     * @param null|AccessToken $token
      *
-     * @param  AccessToken $token
-     *
-     * @return string
+     * @return array<string, string>
      */
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
-    {
-        $uri = new Uri($this->urlResourceOwnerDetails);
-
-        return (string) Uri::withQueryValue($uri, 'access_token', (string) $token);
-    }
-
-    protected function getAuthorizationHeaders($token = null)
+    protected function getAuthorizationHeaders($token = null): array
     {
         return [
-            'Authorization' => sprintf('Bearer %s', $token->getToken()),
+            'Authorization' => $token instanceof AccessToken ? sprintf('Bearer %s', $token->getToken()) : '',
         ];
     }
 }

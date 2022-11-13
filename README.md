@@ -2,6 +2,12 @@
 
 This package provides Microsoft Graph OAuth 2.0 support for the PHP League's [OAuth 2.0 Client](https://github.com/thephpleague/oauth2-client).
 
+## Requirements
+
+The following versions of PHP are compatible:
+- PHP 8.1
+- PHP 8.0
+
 ## Installation
 
 To install, use composer:
@@ -30,7 +36,7 @@ At the time of authoring this documentation, the following scopes are available 
 ## Testing
 
 ``` bash
-$ ./vendor/bin/phpunit
+$ make test
 ```
 
 

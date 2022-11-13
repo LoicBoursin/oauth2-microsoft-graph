@@ -7,88 +7,76 @@ use League\OAuth2\Client\Provider\ResourceOwnerInterface;
 class MicrosoftUser implements ResourceOwnerInterface
 {
     /**
-     * Raw response
+     * Raw response.
      *
-     * @var array
+     * @var array<string, string>
      */
-    protected $response;
+    protected array $response;
 
     /**
      * Creates new resource owner.
      *
-     * @param array  $response
+     * @param array<string, string> $response
      */
-    public function __construct(array $response = array())
+    public function __construct(array $response = [])
     {
         $this->response = $response;
     }
 
     /**
-     * Get user id
-     *
-     * @return string|null
+     * Get user id.
      */
-    public function getId()
+    public function getId(): ?string
     {
         return $this->response['id'] ?: null;
     }
 
     /**
-     * Get user email
-     *
-     * @return string|null
+     * Get user email.
      */
-    public function getEmail()
+    public function getEmail(): ?string
     {
         return $this->response['userPrincipalName'] ?: null;
     }
 
     /**
-     * Get user firstname
-     *
-     * @return string|null
+     * Get user firstname.
      */
-    public function getFirstname()
+    public function getFirstname(): ?string
     {
         return $this->response['givenName'] ?: null;
     }
 
     /**
-     * Get user lastname
-     *
-     * @return string|null
+     * Get user lastname.
      */
-    public function getLastname()
+    public function getLastname(): ?string
     {
         return $this->response['surname'] ?: null;
     }
 
     /**
-     * Get user name
-     *
-     * @return string|null
+     * Get username.
      */
-    public function getName()
+    public function getName(): ?string
     {
         return $this->response['displayName'] ?: null;
     }
 
     /**
-     * Get user urls
-     *
-     * @return string|null
+     * Get user urls.
      */
-    public function getUrls()
+    public function getUrls(): ?string
     {
         return isset($this->response['link']) ? $this->response['link'].'/cid-'.$this->getId() : null;
     }
 
     /**
-     * Return all of the owner details available as an array.
+     * Return all the owner details available as an array.
      *
-     * @return array
+     * @return array<string, string>
      */
-    public function toArray()
+    public function toArray(): array
     {
         return $this->response;
     }

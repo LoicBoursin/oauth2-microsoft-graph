@@ -2,36 +2,40 @@
 
 namespace LoicBoursin\OAuth2\Client\Test\Provider;
 
+use GuzzleHttp\ClientInterface;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\QueryBuilderTrait;
 use LoicBoursin\OAuth2\Client\Provider\Microsoft;
-use Mockery as m;
+use LoicBoursin\OAuth2\Client\Provider\MicrosoftUser;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 
 class MicrosoftTest extends TestCase
 {
     use QueryBuilderTrait;
 
-    protected $provider;
+    protected Microsoft $provider;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->provider = new Microsoft([
             'clientId' => 'mock_client_id',
             'clientSecret' => 'mock_secret',
             'redirectUri' => 'none',
         ]);
+        parent::setUp();
     }
 
-    public function tearDown()
-    {
-        m::close();
-        parent::tearDown();
-    }
-
-    public function testAuthorizationUrl()
+    public function testAuthorizationUrl(): void
     {
         $url = $this->provider->getAuthorizationUrl();
+
+        /** @var array<string, string> $uri */
         $uri = parse_url($url);
+
+        $this->assertArrayHasKey('query', $uri);
+
         parse_str($uri['query'], $query);
 
         $this->assertArrayHasKey('client_id', $query);
@@ -43,40 +47,49 @@ class MicrosoftTest extends TestCase
         $this->assertNotNull($this->provider->getState());
     }
 
-    public function testScopes()
+    public function testScopes(): void
     {
         $scopeSeparator = ',';
         $options = ['scope' => [uniqid(), uniqid()]];
         $query = ['scope' => implode($scopeSeparator, $options['scope'])];
         $url = $this->provider->getAuthorizationUrl($options);
         $encodedScope = $this->buildQueryString($query);
-        $this->assertContains($encodedScope, $url);
+
+        $this->assertStringContainsString($encodedScope, $url);
     }
 
-    public function testGetAuthorizationUrl()
+    public function testGetAuthorizationUrl(): void
     {
         $url = $this->provider->getAuthorizationUrl();
+
+        /** @var array<string, string> $uri */
         $uri = parse_url($url);
 
+        $this->assertArrayHasKey('path', $uri);
         $this->assertEquals('/common/oauth2/v2.0/authorize', $uri['path']);
     }
 
-    public function testGetBaseAccessTokenUrl()
+    public function testGetBaseAccessTokenUrl(): void
     {
         $params = [];
 
         $url = $this->provider->getBaseAccessTokenUrl($params);
+
+        /** @var array<string, string> $uri */
         $uri = parse_url($url);
 
+        $this->assertArrayHasKey('path', $uri);
         $this->assertEquals('/common/oauth2/v2.0/token', $uri['path']);
     }
 
-    public function testSettingAuthEndpoints()
+    public function testSettingAuthEndpoints(): void
     {
         $customAuthUrl = uniqid();
         $customTokenUrl = uniqid();
         $customResourceOwnerUrl = uniqid();
-        $token = m::mock('League\OAuth2\Client\Token\AccessToken');
+
+        /** @var AccessToken $token */
+        $token = $this->createMock(AccessToken::class);
 
         $this->provider = new Microsoft([
             'clientId' => 'mock_client_id',
@@ -84,28 +97,40 @@ class MicrosoftTest extends TestCase
             'redirectUri' => 'none',
             'urlAuthorize' => $customAuthUrl,
             'urlAccessToken' => $customTokenUrl,
-            'urlResourceOwnerDetails' => $customResourceOwnerUrl
+            'urlResourceOwnerDetails' => $customResourceOwnerUrl,
         ]);
 
         $authUrl = $this->provider->getAuthorizationUrl();
-        $this->assertContains($customAuthUrl, $authUrl);
+        $this->assertStringContainsString($customAuthUrl, $authUrl);
         $tokenUrl = $this->provider->getBaseAccessTokenUrl([]);
-        $this->assertContains($customTokenUrl, $tokenUrl);
+        $this->assertStringContainsString($customTokenUrl, $tokenUrl);
         $resourceOwnerUrl = $this->provider->getResourceOwnerDetailsUrl($token);
-        $this->assertContains($customResourceOwnerUrl, $resourceOwnerUrl);
-
+        $this->assertStringContainsString($customResourceOwnerUrl, $resourceOwnerUrl);
     }
 
-    public function testGetAccessToken()
+    public function testGetAccessToken(): void
     {
-        $response = m::mock('Psr\Http\Message\ResponseInterface');
-        $response->shouldReceive('getBody')->andReturn('{"access_token":"mock_access_token","authentication_token":"","code":"","expires_in":3600,"refresh_token":"mock_refresh_token","scope":"","state":"","token_type":""}');
-        $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+        $response = $this->createMock(ResponseInterface::class);
+        $response
+            ->expects($this->once())
+            ->method('getBody')
+            ->willReturn('{"access_token":"mock_access_token","authentication_token":"","code":"","expires_in":3600,"refresh_token":"mock_refresh_token","scope":"","state":"","token_type":""}')
+        ;
+        $response
+            ->expects($this->once())
+            ->method('getHeader')
+            ->willReturn(['content-type' => 'json'])
+        ;
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
-        $client->shouldReceive('send')->times(1)->andReturn($response);
+        $client = $this->createMock(ClientInterface::class);
+        $client
+            ->expects($this->once())
+            ->method('send')
+            ->willReturn($response)
+        ;
         $this->provider->setHttpClient($client);
 
+        /** @var AccessToken $token */
         $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
 
         $this->assertEquals('mock_access_token', $token->getToken());
@@ -115,30 +140,61 @@ class MicrosoftTest extends TestCase
         $this->assertNull($token->getResourceOwnerId());
     }
 
-    public function testUserData()
+    public function testUserData(): void
     {
         $email = uniqid();
         $firstname = uniqid();
         $lastname = uniqid();
         $name = uniqid();
-        $userId = rand(1000,9999);
+        $userId = rand(1000, 9999);
         $urls = uniqid();
 
-        $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-        $postResponse->shouldReceive('getBody')->andReturn('{"access_token":"mock_access_token","authentication_token":"","code":"","expires_in":3600,"refresh_token":"mock_refresh_token","scope":"","state":"","token_type":""}');
-        $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+        $postResponse = $this->createMock(ResponseInterface::class);
+        $postResponse
+            ->expects($this->once())
+            ->method('getBody')
+            ->willReturn('{"access_token":"mock_access_token","authentication_token":"","code":"","expires_in":3600,"refresh_token":"mock_refresh_token","scope":"","state":"","token_type":""}')
+        ;
+        $postResponse
+            ->expects($this->once())
+            ->method('getHeader')
+            ->willReturn(['content-type' => 'json'])
+        ;
 
-        $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-        $userResponse->shouldReceive('getBody')->andReturn('{"id": '.$userId.', "displayName": "'.$name.'", "givenName": "'.$firstname.'", "surname": "'.$lastname.'", "userPrincipalName": "'.$email.'", "link": "'.$urls.'"}');
-        $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+        $userResponse = $this->createMock(ResponseInterface::class);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
-        $client->shouldReceive('send')
-            ->times(2)
-            ->andReturn($postResponse, $userResponse);
+        $body = json_encode([
+            'id' => $userId,
+            'displayName' => $name,
+            'givenName' => $firstname,
+            'surname' => $lastname,
+            'userPrincipalName' => $email,
+            'link' => $urls,
+        ]);
+
+        $userResponse
+            ->expects($this->once())
+            ->method('getBody')
+            ->willReturn($body)
+        ;
+        $userResponse
+            ->expects($this->once())
+            ->method('getHeader')
+            ->willReturn(['content-type' => 'json'])
+        ;
+
+        $client = $this->createMock(ClientInterface::class);
+        $client
+            ->expects($this->exactly(2))
+            ->method('send')
+            ->willReturn($postResponse, $userResponse)
+        ;
         $this->provider->setHttpClient($client);
 
+        /** @var AccessToken $token */
         $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+
+        /** @var MicrosoftUser $user */
         $user = $this->provider->getResourceOwner($token);
 
         $this->assertEquals($email, $user->getEmail());
@@ -155,24 +211,37 @@ class MicrosoftTest extends TestCase
         $this->assertEquals($urls.'/cid-'.$userId, $user->toArray()['link'].'/cid-'.$user->toArray()['id']);
     }
 
-    /**
-     * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
-     **/
-    public function testExceptionThrownWhenErrorObjectReceived()
+    public function testExceptionThrownWhenErrorObjectReceived(): void
     {
+        $this->expectException(IdentityProviderException::class);
+
         $message = uniqid();
 
-        $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-        $postResponse->shouldReceive('getBody')->andReturn('{"error": {"code": "request_token_expired", "message": "'.$message.'"}}');
-        $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
-        $postResponse->shouldReceive('getStatusCode')->andReturn(500);
+        $postResponse = $this->createMock(ResponseInterface::class);
+        $postResponse
+            ->expects($this->any())
+            ->method('getBody')
+            ->willReturn(sprintf('{"error": {"code": "request_token_expired", "message": "%s"}}', $message))
+        ;
+        $postResponse
+            ->expects($this->any())
+            ->method('getHeaders')
+            ->willReturn(['content-type' => 'json'])
+        ;
+        $postResponse
+            ->expects($this->any())
+            ->method('getStatusCode')
+            ->willReturn(500)
+        ;
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
-        $client->shouldReceive('send')
-            ->times(1)
-            ->andReturn($postResponse);
+        $client = $this->createMock(ClientInterface::class);
+        $client
+            ->expects($this->once())
+            ->method('send')
+            ->willReturn($postResponse)
+        ;
         $this->provider->setHttpClient($client);
 
-        $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
     }
 }

@@ -109,4 +109,9 @@ class Microsoft extends AbstractProvider
             'Authorization' => $token instanceof AccessToken ? sprintf('Bearer %s', $token->getToken()) : '',
         ];
     }
+
+    protected function getScopeSeparator(): string
+    {
+        return ' ';
+    }
 }

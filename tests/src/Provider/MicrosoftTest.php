@@ -11,6 +11,9 @@ use LoicBoursin\OAuth2\Client\Provider\MicrosoftUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * @internal
+ */
 class MicrosoftTest extends TestCase
 {
     use QueryBuilderTrait;
@@ -49,7 +52,7 @@ class MicrosoftTest extends TestCase
 
     public function testScopes(): void
     {
-        $scopeSeparator = ',';
+        $scopeSeparator = ' ';
         $options = ['scope' => [uniqid(), uniqid()]];
         $query = ['scope' => implode($scopeSeparator, $options['scope'])];
         $url = $this->provider->getAuthorizationUrl($options);

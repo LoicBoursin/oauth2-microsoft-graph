@@ -57,7 +57,7 @@ class Microsoft extends AbstractProvider
     {
         $uri = new Uri($this->urlResourceOwnerDetails);
 
-        return (string) Uri::withQueryValue($uri, 'access_token', (string) $token);
+        return (string) $uri;
     }
 
     /**

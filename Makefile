@@ -20,4 +20,4 @@ stan: # Run PHPStan
 .PHONY: stan
 
 test: ## Run tests
-	$(PHPUNIT) --coverage-text
+	$(PHPUNIT)

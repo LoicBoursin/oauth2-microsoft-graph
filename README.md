@@ -5,8 +5,11 @@ This package provides Microsoft Graph OAuth 2.0 support for the PHP League's [OA
 ## Requirements
 
 The following versions of PHP are compatible:
+- PHP 8.2
 - PHP 8.1
 - PHP 8.0
+
+Newer versions may be compatible but have not been tested.
 
 ## Installation
 
@@ -33,12 +36,31 @@ At the time of authoring this documentation, the following scopes are available 
 - profile
 - (Eventually) User.Read
 
+#### Overriding default values
+
+If you need to override the default values, you can do so by extending the provider the overriding any of the properties or methods, for example:
+
+```php
+use LoicBoursin\OAuth2\Client\Provider\Microsoft as MicrosoftProvider;
+
+class MyCustomMicrosoftProvider extends MicrosoftProvider
+{
+    protected string $urlAuthorize = 'https://login.microsoftonline.com/{TenantId}/oauth2/v2.0/authorize';
+    protected string $urlAccessToken = 'https://login.microsoftonline.com/{TenantId}/oauth2/v2.0/token';
+}
+```
+
 ## Testing
 
 ``` bash
 $ make test
 ```
 
+## Linting files
+
+```bash
+$ make lint
+```
 
 ## Credits
 

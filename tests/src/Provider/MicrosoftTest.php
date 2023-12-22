@@ -3,6 +3,7 @@
 namespace LoicBoursin\OAuth2\Client\Test\Provider;
 
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Psr7\Stream;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\QueryBuilderTrait;
@@ -10,9 +11,12 @@ use LoicBoursin\OAuth2\Client\Provider\Microsoft;
 use LoicBoursin\OAuth2\Client\Provider\MicrosoftUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 class MicrosoftTest extends TestCase
 {
@@ -117,7 +121,16 @@ class MicrosoftTest extends TestCase
         $response
             ->expects($this->once())
             ->method('getBody')
-            ->willReturn('{"access_token":"mock_access_token","authentication_token":"","code":"","expires_in":3600,"refresh_token":"mock_refresh_token","scope":"","state":"","token_type":""}')
+            ->willReturn($this->createStreamFromResponseArray([
+                'access_token' => 'mock_access_token',
+                'authentication_token' => '',
+                'code' => '',
+                'expires_in' => 3600,
+                'refresh_token' => 'mock_refresh_token',
+                'scope' => '',
+                'state' => '',
+                'token_type' => '',
+            ]))
         ;
         $response
             ->expects($this->once())
@@ -156,7 +169,16 @@ class MicrosoftTest extends TestCase
         $postResponse
             ->expects($this->once())
             ->method('getBody')
-            ->willReturn('{"access_token":"mock_access_token","authentication_token":"","code":"","expires_in":3600,"refresh_token":"mock_refresh_token","scope":"","state":"","token_type":""}')
+            ->willReturn($this->createStreamFromResponseArray([
+                'access_token' => 'mock_access_token',
+                'authentication_token' => '',
+                'code' => '',
+                'expires_in' => 3600,
+                'refresh_token' => 'mock_refresh_token',
+                'scope' => '',
+                'state' => '',
+                'token_type' => '',
+            ]))
         ;
         $postResponse
             ->expects($this->once())
@@ -166,19 +188,17 @@ class MicrosoftTest extends TestCase
 
         $userResponse = $this->createMock(ResponseInterface::class);
 
-        $body = json_encode([
-            'id' => $userId,
-            'displayName' => $name,
-            'givenName' => $firstname,
-            'surname' => $lastname,
-            'userPrincipalName' => $email,
-            'link' => $urls,
-        ]);
-
         $userResponse
             ->expects($this->once())
             ->method('getBody')
-            ->willReturn($body)
+            ->willReturn($this->createStreamFromResponseArray([
+                'id' => $userId,
+                'displayName' => $name,
+                'givenName' => $firstname,
+                'surname' => $lastname,
+                'userPrincipalName' => $email,
+                'link' => $urls,
+            ]))
         ;
         $userResponse
             ->expects($this->once())
@@ -224,7 +244,12 @@ class MicrosoftTest extends TestCase
         $postResponse
             ->expects($this->any())
             ->method('getBody')
-            ->willReturn(sprintf('{"error": {"code": "request_token_expired", "message": "%s"}}', $message))
+            ->willReturn($this->createStreamFromResponseArray([
+                'error' => [
+                    'code' => 'request_token_expired',
+                    'message' => $message,
+                ],
+            ]))
         ;
         $postResponse
             ->expects($this->any())
@@ -246,5 +271,21 @@ class MicrosoftTest extends TestCase
         $this->provider->setHttpClient($client);
 
         $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     */
+    private function createStreamFromResponseArray(array $response): StreamInterface
+    {
+        $jsonEncodedResponse = json_encode($response);
+
+        \is_string($jsonEncodedResponse) ?: throw new \RuntimeException('Unable to encode response to JSON');
+
+        $streamResponse = fopen(sprintf('data://text/plain,%s', $jsonEncodedResponse), 'r');
+
+        false !== $streamResponse ?: throw new \RuntimeException('Unable to create stream from response');
+
+        return new Stream($streamResponse);
     }
 }

@@ -38,17 +38,21 @@ At the time of authoring this documentation, the following scopes are available 
 
 #### Overriding default values
 
-If you need to override the default values, you can do so by extending the provider the overriding any of the properties or methods, for example:
+If you need to override the default values such as authorization URL or default scopes, you can do so by extending the provider through your own provider class, then overriding any of the properties or methods required, for example:
 
 ```php
-use LoicBoursin\OAuth2\Client\Provider\Microsoft as MicrosoftProvider;
+<?php
 
-class MyCustomMicrosoftProvider extends MicrosoftProvider
+use LoicBoursin\OAuth2\Client\Provider\Microsoft;
+
+class MyCustomMicrosoftProvider extends Microsoft
 {
     protected string $urlAuthorize = 'https://login.microsoftonline.com/{TenantId}/oauth2/v2.0/authorize';
     protected string $urlAccessToken = 'https://login.microsoftonline.com/{TenantId}/oauth2/v2.0/token';
 }
 ```
+
+Both the `$urlAuthorize` and `$urlAccessToken` URLs have been set to a specific tenant ID authentication endpoint, `{TenantId}` being a placeholder for the tenant ID required. This is often required for authentication with app registrations/applications that are specifically set for a single tenant, rather than multi-tenant. The default common endpoints, will only work for multi-tenant enabled app registrations.
 
 ## Testing
 
